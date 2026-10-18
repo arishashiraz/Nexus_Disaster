@@ -1,0 +1,36 @@
+{
+  "id": "/",
+  "name": "NEXUS India \u00e2\u20ac\u201d Disaster Response",
+  "short_name": "NEXUS India",
+  "description": "India-wide disaster reporting, response coordination and live weather context.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#112831",
+  "theme_color": "#112831",
+  "lang": "en-IN",
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

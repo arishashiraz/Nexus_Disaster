@@ -1,0 +1,20 @@
+# Use with: docker compose -f docker-compose.yml -f compose.https.yml up --build -d
+# Set NEXUS_DOMAIN to a real hostname whose DNS points at the hosting machine.
+services:
+  pwa:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.pwa
+    environment:
+      NEXUS_DOMAIN: ${NEXUS_DOMAIN:?Set NEXUS_DOMAIN to your real HTTPS hostname}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+volumes:
+  caddy-data:
+  caddy-config:

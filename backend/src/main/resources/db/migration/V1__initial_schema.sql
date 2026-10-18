@@ -1,0 +1,15 @@
+CREATE TABLE rescue_teams(id BIGSERIAL PRIMARY KEY,created_at TIMESTAMPTZ NOT NULL,name VARCHAR(255),base_location VARCHAR(255));
+CREATE TABLE users(id BIGSERIAL PRIMARY KEY,created_at TIMESTAMPTZ NOT NULL,email VARCHAR(255) NOT NULL UNIQUE,password VARCHAR(255) NOT NULL,name VARCHAR(255) NOT NULL,role VARCHAR(255) NOT NULL CHECK(role IN ('ADMIN','CITIZEN','VOLUNTEER','RESPONDER')),phone VARCHAR(255),skills VARCHAR(500),available BOOLEAN NOT NULL,team_id BIGINT REFERENCES rescue_teams(id));
+CREATE TABLE incidents(id BIGSERIAL PRIMARY KEY,created_at TIMESTAMPTZ NOT NULL,title VARCHAR(255),type VARCHAR(255),description VARCHAR(4000),location VARCHAR(255),latitude DOUBLE PRECISION CHECK(latitude BETWEEN -90 AND 90),longitude DOUBLE PRECISION CHECK(longitude BETWEEN -180 AND 180),severity VARCHAR(255),affected_people INTEGER NOT NULL CHECK(affected_people>0),contact VARCHAR(255),priority VARCHAR(255),verification VARCHAR(255),status VARCHAR(255),reporter_id BIGINT NOT NULL REFERENCES users(id));
+CREATE INDEX incidents_reporter_idx ON incidents(reporter_id);
+CREATE INDEX incidents_status_idx ON incidents(verification,status,priority);
+CREATE TABLE incident_status_history(id BIGSERIAL PRIMARY KEY,created_at TIMESTAMPTZ NOT NULL,incident_id BIGINT NOT NULL REFERENCES incidents(id),actor_id BIGINT NOT NULL REFERENCES users(id),status VARCHAR(255),note VARCHAR(2000));
+CREATE INDEX history_incident_idx ON incident_status_history(incident_id);
+CREATE TABLE assignments(id BIGSERIAL PRIMARY KEY,created_at TIMESTAMPTZ NOT NULL,incident_id BIGINT NOT NULL REFERENCES incidents(id),assignee_id BIGINT NOT NULL REFERENCES users(id),kind VARCHAR(255),task VARCHAR(255),status VARCHAR(255),note VARCHAR(2000),UNIQUE(incident_id,assignee_id));
+CREATE INDEX assignments_assignee_idx ON assignments(assignee_id);
+CREATE TABLE assignment_history(id BIGSERIAL PRIMARY KEY,created_at TIMESTAMPTZ NOT NULL,assignment_id BIGINT NOT NULL REFERENCES assignments(id),status VARCHAR(255),note VARCHAR(2000));
+CREATE TABLE resources(id BIGSERIAL PRIMARY KEY,created_at TIMESTAMPTZ NOT NULL,name VARCHAR(255) UNIQUE,category VARCHAR(255),unit VARCHAR(255),quantity INTEGER NOT NULL CHECK(quantity>=0));
+CREATE TABLE resource_requests(id BIGSERIAL PRIMARY KEY,created_at TIMESTAMPTZ NOT NULL,requester_id BIGINT NOT NULL REFERENCES users(id),resource_id BIGINT NOT NULL REFERENCES resources(id),quantity INTEGER NOT NULL CHECK(quantity>0),location VARCHAR(255),reason VARCHAR(255),status VARCHAR(255),review_note VARCHAR(255));
+CREATE INDEX requests_requester_idx ON resource_requests(requester_id);
+CREATE TABLE resource_allocations(id BIGSERIAL PRIMARY KEY,created_at TIMESTAMPTZ NOT NULL,request_id BIGINT NOT NULL UNIQUE REFERENCES resource_requests(id),approved_by_id BIGINT NOT NULL REFERENCES users(id),quantity INTEGER NOT NULL CHECK(quantity>0));
+CREATE TABLE emergency_alerts(id BIGSERIAL PRIMARY KEY,created_at TIMESTAMPTZ NOT NULL,title VARCHAR(255),message VARCHAR(4000),severity VARCHAR(255),location VARCHAR(255),author_id BIGINT NOT NULL REFERENCES users(id));

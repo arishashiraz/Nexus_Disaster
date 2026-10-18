@@ -1,0 +1,18 @@
+{$NEXUS_DOMAIN} {
+    encode zstd gzip
+    handle /api/* {
+        reverse_proxy backend:8080
+    }
+    handle {
+        root * /srv
+        @worker path /sw.js /manifest.webmanifest
+        header @worker Cache-Control "no-cache"
+        try_files {path} /index.html
+        file_server
+    }
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+        Permissions-Policy "camera=(), microphone=()"
+    }
+}

@@ -1,0 +1,290 @@
+[
+  {
+    "code": "AP",
+    "name": "Andhra Pradesh",
+    "kind": "STATE",
+    "sampleLocation": "Vijayawada",
+    "latitude": 16.5062,
+    "longitude": 80.648
+  },
+  {
+    "code": "AR",
+    "name": "Arunachal Pradesh",
+    "kind": "STATE",
+    "sampleLocation": "Itanagar",
+    "latitude": 27.0844,
+    "longitude": 93.6053
+  },
+  {
+    "code": "AS",
+    "name": "Assam",
+    "kind": "STATE",
+    "sampleLocation": "Guwahati",
+    "latitude": 26.1445,
+    "longitude": 91.7362
+  },
+  {
+    "code": "BR",
+    "name": "Bihar",
+    "kind": "STATE",
+    "sampleLocation": "Patna",
+    "latitude": 25.5941,
+    "longitude": 85.1376
+  },
+  {
+    "code": "CG",
+    "name": "Chhattisgarh",
+    "kind": "STATE",
+    "sampleLocation": "Raipur",
+    "latitude": 21.2514,
+    "longitude": 81.6296
+  },
+  {
+    "code": "GA",
+    "name": "Goa",
+    "kind": "STATE",
+    "sampleLocation": "Panaji",
+    "latitude": 15.4909,
+    "longitude": 73.8278
+  },
+  {
+    "code": "GJ",
+    "name": "Gujarat",
+    "kind": "STATE",
+    "sampleLocation": "Ahmedabad",
+    "latitude": 23.0225,
+    "longitude": 72.5714
+  },
+  {
+    "code": "HR",
+    "name": "Haryana",
+    "kind": "STATE",
+    "sampleLocation": "Gurugram",
+    "latitude": 28.4595,
+    "longitude": 77.0266
+  },
+  {
+    "code": "HP",
+    "name": "Himachal Pradesh",
+    "kind": "STATE",
+    "sampleLocation": "Shimla",
+    "latitude": 31.1048,
+    "longitude": 77.1734
+  },
+  {
+    "code": "JH",
+    "name": "Jharkhand",
+    "kind": "STATE",
+    "sampleLocation": "Ranchi",
+    "latitude": 23.3441,
+    "longitude": 85.3096
+  },
+  {
+    "code": "KA",
+    "name": "Karnataka",
+    "kind": "STATE",
+    "sampleLocation": "Bengaluru",
+    "latitude": 12.9716,
+    "longitude": 77.5946
+  },
+  {
+    "code": "KL",
+    "name": "Kerala",
+    "kind": "STATE",
+    "sampleLocation": "Thiruvananthapuram",
+    "latitude": 8.5241,
+    "longitude": 76.9366
+  },
+  {
+    "code": "MP",
+    "name": "Madhya Pradesh",
+    "kind": "STATE",
+    "sampleLocation": "Bhopal",
+    "latitude": 23.2599,
+    "longitude": 77.4126
+  },
+  {
+    "code": "MH",
+    "name": "Maharashtra",
+    "kind": "STATE",
+    "sampleLocation": "Mumbai",
+    "latitude": 19.076,
+    "longitude": 72.8777
+  },
+  {
+    "code": "MN",
+    "name": "Manipur",
+    "kind": "STATE",
+    "sampleLocation": "Imphal",
+    "latitude": 24.817,
+    "longitude": 93.9368
+  },
+  {
+    "code": "ML",
+    "name": "Meghalaya",
+    "kind": "STATE",
+    "sampleLocation": "Shillong",
+    "latitude": 25.5788,
+    "longitude": 91.8933
+  },
+  {
+    "code": "MZ",
+    "name": "Mizoram",
+    "kind": "STATE",
+    "sampleLocation": "Aizawl",
+    "latitude": 23.7271,
+    "longitude": 92.7176
+  },
+  {
+    "code": "NL",
+    "name": "Nagaland",
+    "kind": "STATE",
+    "sampleLocation": "Kohima",
+    "latitude": 25.6751,
+    "longitude": 94.1086
+  },
+  {
+    "code": "OD",
+    "name": "Odisha",
+    "kind": "STATE",
+    "sampleLocation": "Bhubaneswar",
+    "latitude": 20.2961,
+    "longitude": 85.8245
+  },
+  {
+    "code": "PB",
+    "name": "Punjab",
+    "kind": "STATE",
+    "sampleLocation": "Ludhiana",
+    "latitude": 30.901,
+    "longitude": 75.8573
+  },
+  {
+    "code": "RJ",
+    "name": "Rajasthan",
+    "kind": "STATE",
+    "sampleLocation": "Jaipur",
+    "latitude": 26.9124,
+    "longitude": 75.7873
+  },
+  {
+    "code": "SK",
+    "name": "Sikkim",
+    "kind": "STATE",
+    "sampleLocation": "Gangtok",
+    "latitude": 27.3389,
+    "longitude": 88.6065
+  },
+  {
+    "code": "TN",
+    "name": "Tamil Nadu",
+    "kind": "STATE",
+    "sampleLocation": "Chennai",
+    "latitude": 13.0827,
+    "longitude": 80.2707
+  },
+  {
+    "code": "TS",
+    "name": "Telangana",
+    "kind": "STATE",
+    "sampleLocation": "Hyderabad",
+    "latitude": 17.385,
+    "longitude": 78.4867
+  },
+  {
+    "code": "TR",
+    "name": "Tripura",
+    "kind": "STATE",
+    "sampleLocation": "Agartala",
+    "latitude": 23.8315,
+    "longitude": 91.2868
+  },
+  {
+    "code": "UP",
+    "name": "Uttar Pradesh",
+    "kind": "STATE",
+    "sampleLocation": "Lucknow",
+    "latitude": 26.8467,
+    "longitude": 80.9462
+  },
+  {
+    "code": "UK",
+    "name": "Uttarakhand",
+    "kind": "STATE",
+    "sampleLocation": "Dehradun",
+    "latitude": 30.3165,
+    "longitude": 78.0322
+  },
+  {
+    "code": "WB",
+    "name": "West Bengal",
+    "kind": "STATE",
+    "sampleLocation": "Kolkata",
+    "latitude": 22.5726,
+    "longitude": 88.3639
+  },
+  {
+    "code": "AN",
+    "name": "Andaman and Nicobar Islands",
+    "kind": "UNION_TERRITORY",
+    "sampleLocation": "Sri Vijaya Puram",
+    "latitude": 11.6234,
+    "longitude": 92.7265
+  },
+  {
+    "code": "CH",
+    "name": "Chandigarh",
+    "kind": "UNION_TERRITORY",
+    "sampleLocation": "Chandigarh",
+    "latitude": 30.7333,
+    "longitude": 76.7794
+  },
+  {
+    "code": "DH",
+    "name": "Dadra and Nagar Haveli and Daman and Diu",
+    "kind": "UNION_TERRITORY",
+    "sampleLocation": "Daman",
+    "latitude": 20.3974,
+    "longitude": 72.8328
+  },
+  {
+    "code": "DL",
+    "name": "Delhi",
+    "kind": "UNION_TERRITORY",
+    "sampleLocation": "New Delhi",
+    "latitude": 28.6139,
+    "longitude": 77.209
+  },
+  {
+    "code": "JK",
+    "name": "Jammu and Kashmir",
+    "kind": "UNION_TERRITORY",
+    "sampleLocation": "Srinagar",
+    "latitude": 34.0837,
+    "longitude": 74.7973
+  },
+  {
+    "code": "LA",
+    "name": "Ladakh",
+    "kind": "UNION_TERRITORY",
+    "sampleLocation": "Leh",
+    "latitude": 34.1526,
+    "longitude": 77.5771
+  },
+  {
+    "code": "LD",
+    "name": "Lakshadweep",
+    "kind": "UNION_TERRITORY",
+    "sampleLocation": "Kavaratti",
+    "latitude": 10.5667,
+    "longitude": 72.6417
+  },
+  {
+    "code": "PY",
+    "name": "Puducherry",
+    "kind": "UNION_TERRITORY",
+    "sampleLocation": "Puducherry",
+    "latitude": 11.9416,
+    "longitude": 79.8083
+  }
+]

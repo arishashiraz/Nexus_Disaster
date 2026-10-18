@@ -1,0 +1,33 @@
+{
+  "name": "nexus-disaster-response",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build && node scripts/build-sw.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "check:pwa": "node scripts/check-pwa.mjs && node scripts/test-worker.mjs",
+    "format": "prettier --write src scripts index.html vite.config.js",
+    "format:check": "prettier --check src scripts index.html vite.config.js",
+    "format:java": "prettier --plugin=prettier-plugin-java --write \"../backend/src/**/*.java\""
+  },
+  "dependencies": {
+    "axios": "^1.9.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.511.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-leaflet": "^5.0.0",
+    "react-router-dom": "^7.6.2",
+    "recharts": "^2.15.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^4.5.0",
+    "prettier": "^3.5.3",
+    "prettier-plugin-java": "^2.11.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^6.3.5"
+  }
+}
