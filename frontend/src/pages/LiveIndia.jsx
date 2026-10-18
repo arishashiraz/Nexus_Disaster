@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import { useLiveFeed } from '../services/useLiveFeed';
 import {
   CloudSun,
   RefreshCw,
@@ -11,7 +12,6 @@ import {
   Thermometer,
 } from 'lucide-react';
 import regions from '../../../shared/india-regions.json';
-import { api, errorMessage } from '../services/api';
 import { date, Field, Select, Form, Empty } from '../components/UI';
 import IncidentMap from '../components/IncidentMap';
 
@@ -56,60 +56,22 @@ function SourceStatus({ feed }) {
   );
 }
 export default function LiveIndia() {
-  const [state, setState] = useState('DL'),
-    [point, setPoint] = useState(null),
-    [weather, setWeather] = useState(null),
-    [quakes, setQuakes] = useState(null),
-    [error, setError] = useState(''),
-    [weatherBusy, setWeatherBusy] = useState(false),
-    [quakeBusy, setQuakeBusy] = useState(false);
-  const sequence = useRef(0);
+  const [state, setState] = useState('DL');
+  const [point, setPoint] = useState(null);
   const selected = regions.find((r) => r.code === state);
-  const loadWeather = useCallback(async () => {
-    const id = ++sequence.current;
-    setWeatherBusy(true);
-    try {
-      const { data } = await api.get('/live/weather', {
-        params: { stateCode: state, ...(point ? { latitude: point[0], longitude: point[1] } : {}) },
-      });
-      if (id === sequence.current) {
-        setWeather(data);
-        setError('');
-      }
-    } catch (e) {
-      if (id === sequence.current) {
-        setWeather(null);
-        setError(errorMessage(e));
-      }
-    } finally {
-      if (id === sequence.current) setWeatherBusy(false);
-    }
-  }, [state, point]);
-  const loadQuakes = useCallback(async () => {
-    setQuakeBusy(true);
-    try {
-      setQuakes((await api.get('/live/earthquakes')).data);
-    } catch (e) {
-      setQuakes(null);
-      setError(errorMessage(e));
-    } finally {
-      setQuakeBusy(false);
-    }
-  }, []);
-  useEffect(() => {
-    setWeather(null);
-    loadWeather();
-    const timer = setInterval(loadWeather, 600000);
-    return () => {
-      clearInterval(timer);
-      sequence.current++;
-    };
-  }, [loadWeather]);
-  useEffect(() => {
-    loadQuakes();
-    const timer = setInterval(loadQuakes, 300000);
-    return () => clearInterval(timer);
-  }, [loadQuakes]);
+  const query = new URLSearchParams({ stateCode: state });
+  if (point) {
+    query.set('latitude', point[0]);
+    query.set('longitude', point[1]);
+  }
+  const weatherFeed = useLiveFeed('/live/weather?' + query, 600000);
+  const airFeed = useLiveFeed('/live/air-quality?' + query, 600000);
+  const quakeFeed = useLiveFeed('/live/earthquakes', 300000);
+  const { data: weather, busy: weatherBusy } = weatherFeed;
+  const { data: air, busy: airBusy } = airFeed;
+  const { data: quakes, busy: quakeBusy } = quakeFeed;
+  const busy = weatherBusy || airBusy || quakeBusy;
+  const pollution = air?.data?.current;
   const current = weather?.data?.current,
     daily = weather?.data?.daily;
   return (
@@ -118,17 +80,18 @@ export default function LiveIndia() {
         <div>
           <div className="eyebrow green">NEXUS INDIA / LIVE CONTEXT</div>
           <h1>A wider view. A better response.</h1>
-          <p>Current weather and recent earthquakes, with transparent sources and timestamps.</p>
+          <p>Weather, air quality and recent earthquakes, with sources and timestamps.</p>
         </div>
         <button
           className="button light"
-          disabled={weatherBusy || quakeBusy}
+          disabled={busy}
           onClick={() => {
-            loadWeather();
-            loadQuakes();
+            weatherFeed.refresh();
+            airFeed.refresh();
+            quakeFeed.refresh();
           }}
         >
-          <RefreshCw size={16} className={weatherBusy || quakeBusy ? 'spin' : ''} />
+          <RefreshCw size={16} className={busy ? 'spin' : ''} />
           Refresh feeds
         </button>
       </div>
@@ -148,11 +111,6 @@ export default function LiveIndia() {
           <span>union territories</span>
         </div>
       </div>
-      {error && (
-        <div role="alert" className="error">
-          {error}
-        </div>
-      )}
       <section className="panel padded">
         <div className="location-controls">
           <Select
@@ -216,8 +174,13 @@ export default function LiveIndia() {
             </h2>
             <p>Open-Meteo · Model estimates, not official disaster warnings</p>
           </div>
-          <SourceStatus feed={weather} />
+          <SourceStatus feed={weatherFeed.error ? { status: 'UNAVAILABLE' } : weather} />
         </div>
+        {weatherFeed.error && (
+          <p className="error" role="alert">
+            Weather: {weatherFeed.error}
+          </p>
+        )}
         {weatherBusy && !current ? (
           <div className="loading">
             <RefreshCw className="spin" />
@@ -267,9 +230,10 @@ export default function LiveIndia() {
                     })}
                   </small>
                   <strong>
-                    {daily.temperature_2m_min[i]}° / {daily.temperature_2m_max[i]}°
+                    {daily.temperature_2m_min?.[i] ?? 'Unknown'}° /{' '}
+                    {daily.temperature_2m_max?.[i] ?? 'Unknown'}°
                   </strong>
-                  <span>{daily.precipitation_sum[i]} mm forecast precipitation</span>
+                  <span>{daily.precipitation_sum?.[i] ?? 'Unknown'} mm forecast precipitation</span>
                 </article>
               ))}
             </div>
@@ -292,6 +256,77 @@ export default function LiveIndia() {
           </a>
         </div>
       </section>
+      <section className="panel" aria-label="Air quality">
+        <div className="panel-heading">
+          <div>
+            <h2>
+              <Wind size={20} /> Air quality · {selected.name}
+            </h2>
+            <p>
+              Open-Meteo / CAMS · Model estimates for{' '}
+              {air?.locationLabel || (point ? 'selected coordinates' : selected.sampleLocation)}
+            </p>
+          </div>
+          <SourceStatus feed={airFeed.error ? { status: 'UNAVAILABLE' } : air} />
+        </div>
+        {airFeed.error && (
+          <p className="error" role="alert">
+            Air quality: {airFeed.error}
+          </p>
+        )}
+        {airBusy && !pollution ? (
+          <div className="loading">Fetching air quality…</div>
+        ) : pollution ? (
+          <div className="weather-metrics">
+            <div>
+              <Wind />
+              <strong>{pollution.us_aqi ?? 'Unknown'}</strong>
+              <p>US AQI (not CPCB AQI)</p>
+            </div>
+            <div>
+              <strong>
+                {pollution.pm2_5 ?? 'Unknown'} <small>µg/m³</small>
+              </strong>
+              <p>PM2.5</p>
+            </div>
+            <div>
+              <strong>
+                {pollution.pm10 ?? 'Unknown'} <small>µg/m³</small>
+              </strong>
+              <p>PM10</p>
+            </div>
+          </div>
+        ) : (
+          <Empty text="Air quality is unavailable. No sample numbers are substituted." />
+        )}
+        <div className="source-foot">
+          <p>
+            <strong>Data time:</strong> {sourceTime(pollution?.time)} · <strong>Fetched:</strong>{' '}
+            {air?.fetchedAt ? date(air.fetchedAt) : 'Not yet fetched'}
+          </p>
+          {air?.status === 'STALE' && <p role="status">{air.message}</p>}
+          <p>
+            {air?.coverage ||
+              'CAMS model estimates, not local sensor readings. US AQI differs from Indian CPCB AQI.'}{' '}
+            Refresh interval: 10 minutes.
+          </p>
+          <p>
+            Source model updates are less frequent than app refreshes; this is not an instant
+            pollution sensor.
+          </p>
+          <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">
+            Air quality by Open-Meteo (CC BY 4.0) <ExternalLink size={12} />
+          </a>
+          {' · '}
+          <a
+            href="https://ads.atmosphere.copernicus.eu/datasets/cams-global-atmospheric-composition-forecasts"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Copernicus Atmosphere Monitoring Service (CAMS)
+          </a>
+        </div>
+      </section>
       <section className="panel">
         <div className="panel-heading">
           <div>
@@ -300,7 +335,7 @@ export default function LiveIndia() {
             </h2>
             <p>USGS · Past seven days · India and surrounding region</p>
           </div>
-          <SourceStatus feed={quakes} />
+          <SourceStatus feed={quakeFeed.error ? { status: 'UNAVAILABLE' } : quakes} />
         </div>
         <div className="source-foot">
           <p>
@@ -312,6 +347,11 @@ export default function LiveIndia() {
             disaster risk.
           </p>
         </div>
+        {quakeFeed.error && (
+          <p className="error" role="alert">
+            Earthquakes: {quakeFeed.error}
+          </p>
+        )}
         <IncidentMap events={quakes?.events || []} />
         {quakeBusy && !quakes ? (
           <div className="loading">Fetching earthquake events…</div>

@@ -10,7 +10,8 @@
     "check:pwa": "node scripts/check-pwa.mjs && node scripts/test-worker.mjs",
     "format": "prettier --write src scripts index.html vite.config.js",
     "format:check": "prettier --check src scripts index.html vite.config.js",
-    "format:java": "prettier --plugin=prettier-plugin-java --write \"../backend/src/**/*.java\""
+    "format:java": "prettier --plugin=prettier-plugin-java --write \"../backend/src/**/*.java\"",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "axios": "^1.9.0",
@@ -23,6 +24,7 @@
     "recharts": "^2.15.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^4.5.0",
     "prettier": "^3.5.3",

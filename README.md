@@ -11,7 +11,7 @@ An installable, India-wide Progressive Web App for a semester / Professional Tra
 
 - **Installable app:** standalone app window, app icons, offline public shell, connection feedback, and update prompts. Open `/app` to enter the workspace directly.
 - **All India:** all 28 states and 8 union territories; state/district incident reporting and state/source filters. Maps start at India and recenter correctly when a state or pin changes.
-- **Live India:** actual Open-Meteo weather for a named sample point in every state/UT, custom coordinates, three-day forecasts, and a separate USGS regional earthquake feed. Every feed shows its source, data time, fetch time, and availability.
+- **Live India:** Open-Meteo/CAMS air-quality estimates (PM2.5, PM10, US AQI) and actual Open-Meteo weather for a named sample point in every state/UT, custom coordinates, three-day forecasts, and a separate USGS regional earthquake feed. Every feed shows its source, data time, fetch time, and availability.
 - **Honest data separation:** seeded fictional reports and QA records have source labels. Live provider data never automatically verifies incidents or dispatches teams.
 - **Reliability fixes:** independent sidebar scrolling, modal keyboard support, duplicate-submit protection, preserved sessions during connection failure, stock-edit conflict detection, consistent responder lock ordering, and database-backed health checks.
 
@@ -400,3 +400,30 @@ Add `-IncludeDataTests` only when you want the HTTP smoke script to create ficti
 ```
 
 Frontend code formatting is available through `npm run format` and `npm run format:check` in `frontend`. Java formatting is available through `npm run format:java` there. Formatting dependencies are development-only.
+
+
+## October 18 predeployment audit and live air quality
+
+Live India now includes `/api/live/air-quality?stateCode=DL` (authenticated),
+with optional paired latitude/longitude. It uses Open-Meteo's CAMS global model,
+shows PM2.5, PM10 and US AQI, and refreshes the cached result every ten minutes.
+These are model estimates, not local sensor measurements or India's CPCB AQI.
+The upstream model updates less frequently than app refreshes.
+Source: https://open-meteo.com/en/docs/air-quality-api
+
+Each feed owns its loading/error state and cancels superseded location requests.
+Invalid provider payloads are unavailable; failed refreshes keep dated last-known
+results marked stale. Weather, pollution and earthquake feeds never create rescue
+reports or official emergency alerts automatically.
+
+Run browser checks with the app and API running:
+
+```powershell
+cd frontend
+npm run test:browser
+```
+
+The browser suite defaults to installed Microsoft Edge. Set BROWSER_CHANNEL=chrome
+for installed Chrome. Phone checks emulate a viewport; test installation on a real
+Android/iPhone after HTTPS hosting. See docs/PREDEPLOYMENT-AUDIT.md for results and
+remaining deployment requirements.

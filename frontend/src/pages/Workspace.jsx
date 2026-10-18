@@ -423,7 +423,7 @@ export default function Workspace() {
               <div className="panel-heading">
                 <div>
                   <h2>Incident situation</h2>
-                  <p>Reports across India ? 28 states & 8 union territories</p>
+                  <p>Reports across India · 28 states & 8 union territories</p>
                 </div>
                 <span className="live-label">
                   <i /> DATABASE VIEW

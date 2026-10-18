@@ -46,7 +46,7 @@ const routes = {
 };
 function AppEntry() {
   const { user, loading } = useAuth();
-  if (loading) return <div className="loading">Opening NEXUS India?</div>;
+  if (loading) return <div className="loading">Opening NEXUS India...</div>;
   return <Navigate to={user ? '/' + user.role.toLowerCase() + '/dashboard' : '/login'} replace />;
 }
 function App() {

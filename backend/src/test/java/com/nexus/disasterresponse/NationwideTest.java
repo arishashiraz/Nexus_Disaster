@@ -120,7 +120,23 @@ class NationwideTest extends ApiTestSupport {
   void liveRoutesRequireAuthAndValidateCoordinatesBeforeCallingProvider()
     throws Exception {
     call("GET", "/live/earthquakes", null, null, 401);
+    call("GET", "/live/air-quality?stateCode=DL", null, null, 401);
     String citizen = login("citizen");
+    call("GET", "/live/air-quality?stateCode=INVALID", citizen, null, 400);
+    call(
+      "GET",
+      "/live/air-quality?stateCode=DL&latitude=28",
+      citizen,
+      null,
+      400
+    );
+    call(
+      "GET",
+      "/live/air-quality?stateCode=DL&latitude=NaN&longitude=77",
+      citizen,
+      null,
+      400
+    );
     call("GET", "/live/weather?stateCode=INVALID", citizen, null, 400);
     call("GET", "/live/weather?stateCode=DL&latitude=28", citizen, null, 400);
     call(

@@ -1,3 +1,5 @@
+> Latest results: [18 October predeployment audit](docs/PREDEPLOYMENT-AUDIT.md), including air quality and browser/mobile checks. Earlier results below are historical.
+
 # NEXUS implementation and verification report
 
 ## Nationwide PWA upgrade — final audit, 17 October 2026

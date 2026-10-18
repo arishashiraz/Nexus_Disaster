@@ -7,3 +7,6 @@ target/
 .runtime/
 .idea/
 .DS_Store
+
+playwright-report/
+test-results/

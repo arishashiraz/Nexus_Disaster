@@ -55,6 +55,47 @@ class LiveDataTest {
     assertEquals(first.get("data"), result.get("data"));
   }
 
+  @Test
+  @SuppressWarnings("unchecked")
+  void failedAirRefreshKeepsOriginalTimestamp() throws Exception {
+    var service = service(
+      "{\"current\":{\"time\":1792252800,\"us_aqi\":110,\"pm2_5\":38.5,\"pm10\":25}}",
+      200
+    );
+    var first = service.airQuality("DL", null, null);
+    Map<String, Object> cache = (Map<
+      String,
+      Object
+    >) ReflectionTestUtils.getField(service, "cache");
+    var entry = cache.entrySet().iterator().next();
+    Object previous = entry.getValue();
+    var constructor = previous.getClass().getDeclaredConstructors()[0];
+    constructor.setAccessible(true);
+    cache.put(
+      entry.getKey(),
+      constructor.newInstance(
+        first.get("data"),
+        first.get("fetchedAt"),
+        java.time.Instant.now().minusSeconds(3600),
+        false
+      )
+    );
+    HttpClient client = (HttpClient) ReflectionTestUtils.getField(
+      service,
+      "client"
+    );
+    when(
+      client.send(
+        any(HttpRequest.class),
+        org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()
+      )
+    ).thenThrow(new IOException("Provider unavailable"));
+    var result = service.airQuality("DL", null, null);
+    assertEquals("STALE", result.get("status"));
+    assertEquals(first.get("fetchedAt"), result.get("fetchedAt"));
+    assertEquals(first.get("data"), result.get("data"));
+  }
+
   @SuppressWarnings("unchecked")
   private LiveDataService service(String payload, int code) throws Exception {
     ObjectMapper mapper = new ObjectMapper();
@@ -114,5 +155,51 @@ class LiveDataTest {
     var events = (List<?>) result.get("events");
     assertEquals(1, events.size());
     assertTrue(result.get("coverage").toString().contains("neighbouring"));
+  }
+
+  @Test
+  void airQualityIsValidatedCachedAndAttributed() throws Exception {
+    var service = service(
+      "{\"current\":{\"time\":1792252800,\"us_aqi\":110,\"pm2_5\":38.5,\"pm10\":57.2}}",
+      200
+    );
+    var first = service.airQuality("DL", null, null);
+    var second = service.airQuality("DL", null, null);
+    assertEquals("AVAILABLE", first.get("status"));
+    assertEquals("Open-Meteo / CAMS", first.get("source"));
+    assertEquals(first.get("fetchedAt"), second.get("fetchedAt"));
+    assertTrue(first.get("coverage").toString().contains("CPCB"));
+    verify(
+      (HttpClient) ReflectionTestUtils.getField(service, "client"),
+      times(1)
+    ).send(
+      any(HttpRequest.class),
+      org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()
+    );
+  }
+
+  @Test
+  void missingOrNonNumericPollutionNeverAppearsAsRealData() throws Exception {
+    for (String payload : List.of(
+      "{}",
+      "{\"current\":{\"time\":1792252800,\"us_aqi\":\"bad\",\"pm2_5\":4,\"pm10\":8}}"
+    )) {
+      var result = service(payload, 200).airQuality("TN", null, null);
+      assertEquals("UNAVAILABLE", result.get("status"));
+      assertNull(result.get("data"));
+    }
+    assertEquals(
+      "UNAVAILABLE",
+      service("{}", 503).airQuality("DL", null, null).get("status")
+    );
+    assertEquals(
+      "UNAVAILABLE",
+      service(
+        "{\"current\":{\"time\":1792252800,\"temperature_2m\":\"bad\"}}",
+        200
+      )
+        .weather("DL", null, null)
+        .get("status")
+    );
   }
 }

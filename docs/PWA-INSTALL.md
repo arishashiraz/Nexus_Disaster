@@ -37,7 +37,7 @@ $env:DB_PASSWORD='replace-with-your-database-password'
 docker compose -f docker-compose.yml -f compose.https.yml up --build -d
 ```
 
-Replace the example hostname and credentials. Do not expose development demo accounts with real personal reports. The deployment files were not executed here because Docker and a hosting domain were unavailable. Review account provisioning and deployment configuration before any public use.
+Replace the example hostname and credentials. The HTTPS overlay now requires DB_PASSWORD and JWT_SECRET and defaults SEED_DEMO to false. Disabling seeding does not remove accounts already stored in a database. Use a fresh production database and provision trusted administrator/responder accounts before real use; this project does not yet include a production account-provisioning workflow. For a deliberately public fictional demo only, explicitly set SEED_DEMO=true and keep all submissions fictional. Do not expose development demo accounts with real personal reports. The deployment files were not executed here because Docker and a hosting domain were unavailable. Review account provisioning and deployment configuration before any public use.
 
 ## Offline behavior and updates
 

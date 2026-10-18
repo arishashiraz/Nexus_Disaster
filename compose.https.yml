@@ -1,6 +1,15 @@
 # Use with: docker compose -f docker-compose.yml -f compose.https.yml up --build -d
 # Set NEXUS_DOMAIN to a real hostname whose DNS points at the hosting machine.
 services:
+  db:
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set a strong database password}
+  backend:
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD:?Set a strong database password}
+      JWT_SECRET: ${JWT_SECRET:?Set a random JWT secret of at least 32 bytes}
+      SEED_DEMO: ${SEED_DEMO:-false}
+      CORS_ALLOWED_ORIGINS: https://${NEXUS_DOMAIN:?Set NEXUS_DOMAIN}
   pwa:
     build:
       context: .

@@ -29,6 +29,15 @@ public class LiveDataApi {
     return live.weather(stateCode, latitude, longitude);
   }
 
+  @GetMapping("/live/air-quality")
+  public Object airQuality(
+    @RequestParam String stateCode,
+    @RequestParam(required = false) Double latitude,
+    @RequestParam(required = false) Double longitude
+  ) {
+    return live.airQuality(stateCode, latitude, longitude);
+  }
+
   @GetMapping("/live/earthquakes")
   public Object earthquakes() {
     return live.earthquakes();
