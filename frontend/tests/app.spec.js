@@ -109,18 +109,18 @@ test('invalid login, role boundary and public pages', async ({ page }) => {
   await expect(page).toHaveURL(/unauthorized/);
 });
 
-test('offline public shell loads without caching private API responses', async ({ browser }) => {
+test('offline public shell loads without caching private API responses', async ({ browser, baseURL }) => {
   const context = await browser.newContext({ serviceWorkers: 'allow' });
   const page = await context.newPage();
   try {
-    await page.goto('http://127.0.0.1:5173/');
+    await page.goto(baseURL + '/');
     await page.evaluate(async () => {
       await navigator.serviceWorker.ready;
     });
     await page.reload();
     await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
     await context.setOffline(true);
-    await page.goto('http://127.0.0.1:5173/about');
+    await page.goto(baseURL + '/about');
     await expect(page.getByRole('heading', { name: /A shared platform/ })).toBeVisible();
     await expect(page.getByRole('status')).toContainText('offline');
     const keys = await page.evaluate(async () => {

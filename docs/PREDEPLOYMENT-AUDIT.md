@@ -103,3 +103,16 @@ installed Chrome. Test artifacts are under frontend/test-results (Git-ignored).
 - Weather: https://open-meteo.com/en/docs
 - Air quality, coverage and attribution: https://open-meteo.com/en/docs/air-quality-api
 - USGS GeoJSON: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
+
+## Render preparation recheck — 19 October 2026
+
+- Repaired a null-byte-corrupted render.yaml and validated it against Render's Blueprint JSON schema.
+- Combined Docker build packages the production PWA inside Spring Boot. The app and API share one origin; public page routes forward to the SPA while protected API routes still require authentication.
+- Free Singapore web service and PostgreSQL configured, with generated JWT secret, private-only database access and explicit fictional demo seeding. Auto deployment is disabled.
+- Backend regression: 18 tests passed. Combined JAR packaging passed.
+- Production frontend build and PWA manifest/worker checks passed.
+- PostgreSQL workflow check: 45 assertions passed against nexus_audit, not the user's nexus database.
+- All 36 weather and air-quality sample points plus the USGS feed returned AVAILABLE with actual provider timestamps.
+- npm production dependency audit: zero known vulnerabilities.
+- Render resources have not yet been created. Local combined-JAR testing does not verify the Linux container build or hosted TLS. Physical phone installation must be checked after Render supplies the actual HTTPS URL.
+- Browser recheck against the combined JAR: all 11 Edge tests passed, including all role routes, phone viewport layouts and actual offline service-worker behavior. Frontend formatting also passed.

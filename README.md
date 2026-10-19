@@ -427,3 +427,14 @@ The browser suite defaults to installed Microsoft Edge. Set BROWSER_CHANNEL=chro
 for installed Chrome. Phone checks emulate a viewport; test installation on a real
 Android/iPhone after HTTPS hosting. See docs/PREDEPLOYMENT-AUDIT.md for results and
 remaining deployment requirements.
+
+
+## Render deployment
+
+[Deploy the academic demo on Render](https://render.com/deploy?repo=https://github.com/arishashiraz/Nexus_Disaster)
+
+The repository includes a combined app/API Docker image and a `render.yaml`
+Blueprint for a free web service and PostgreSQL database. See
+[Render setup and limitations](docs/RENDER-DEPLOY.md). A Render account is required;
+this link starts setup and is not an already-running app URL. Free PostgreSQL
+expires after 30 days. The Blueprint enables public fictional demo accounts.

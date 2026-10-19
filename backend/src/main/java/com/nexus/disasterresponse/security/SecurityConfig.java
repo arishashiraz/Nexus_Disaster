@@ -66,8 +66,34 @@ public class SecurityConfig {
             "/api/health"
           )
           .permitAll()
-          .anyRequest()
+          .requestMatchers("/api/**")
           .authenticated()
+          .requestMatchers(
+            org.springframework.http.HttpMethod.GET,
+            "/",
+            "/app",
+            "/login",
+            "/register",
+            "/about",
+            "/unauthorized",
+            "/{page:[a-zA-Z0-9_-]+}",
+            "/citizen",
+            "/citizen/*",
+            "/volunteer",
+            "/volunteer/*",
+            "/responder",
+            "/responder/*",
+            "/admin",
+            "/admin/*",
+            "/index.html",
+            "/assets/**",
+            "/icons/**",
+            "/sw.js",
+            "/manifest.webmanifest"
+          )
+          .permitAll()
+          .anyRequest()
+          .denyAll()
       )
       .oauth2ResourceServer(o ->
         o
