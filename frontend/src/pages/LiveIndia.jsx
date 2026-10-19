@@ -50,7 +50,9 @@ function SourceStatus({ feed }) {
         : feed?.status === 'STALE'
           ? 'Last-known data'
           : feed?.status === 'UNAVAILABLE'
-            ? 'Source unavailable'
+            ? feed?.retryAt
+              ? 'Provider rate limited'
+              : 'Source unavailable'
             : 'Connecting…'}
     </span>
   );
@@ -246,7 +248,13 @@ export default function LiveIndia() {
             <strong>Data time:</strong> {sourceTime(current?.time)} · <strong>Fetched:</strong>{' '}
             {weather?.fetchedAt ? date(weather.fetchedAt) : 'Not yet fetched'}
           </p>
-          {weather?.status === 'STALE' && <p role="status">{weather.message}</p>}
+          {weather?.status !== 'AVAILABLE' && weather?.message && (
+            <p role="status">
+              {weather.retryAt
+                ? `Weather provider rate limit reached. Next eligible retry: ${date(weather.retryAt)}. Recovery depends on the provider; refreshing sooner will not bypass the limit.`
+                : weather.message}
+            </p>
+          )}
           <p>
             {weather?.coverage || 'Point-specific weather model data.'} Refresh interval: 10
             minutes.
@@ -304,7 +312,7 @@ export default function LiveIndia() {
             <strong>Data time:</strong> {sourceTime(pollution?.time)} · <strong>Fetched:</strong>{' '}
             {air?.fetchedAt ? date(air.fetchedAt) : 'Not yet fetched'}
           </p>
-          {air?.status === 'STALE' && <p role="status">{air.message}</p>}
+          {air?.status !== 'AVAILABLE' && air?.message && <p role="status">{air.message}</p>}
           <p>
             {air?.coverage ||
               'CAMS model estimates, not local sensor readings. US AQI differs from Indian CPCB AQI.'}{' '}
@@ -393,7 +401,9 @@ export default function LiveIndia() {
             Source generated: {quakes?.generatedAt ? date(quakes.generatedAt) : 'Unavailable'} ·
             Fetched: {quakes?.fetchedAt ? date(quakes.fetchedAt) : 'Unavailable'}
           </p>
-          {quakes?.status === 'STALE' && <p>{quakes.message}</p>}
+          {quakes?.status !== 'AVAILABLE' && quakes?.message && (
+            <p role="status">{quakes.message}</p>
+          )}
           <a
             href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php"
             target="_blank"
