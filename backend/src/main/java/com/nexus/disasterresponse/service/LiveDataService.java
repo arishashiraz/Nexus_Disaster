@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class LiveDataService {
 
-  private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(LiveDataService.class);
+  private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(
+    LiveDataService.class
+  );
   private final ObjectMapper mapper;
   private final IndiaRegions regions;
   private final HttpClient client = HttpClient.newBuilder()
@@ -23,13 +25,25 @@ public class LiveDataService {
     .mapToObj(i -> new Object())
     .toArray();
   private final Map<String, Cached> cache = new ConcurrentHashMap<>();
+  private final Map<String, Instant> providerCooldowns =
+    new ConcurrentHashMap<>();
 
   private record Cached(
     JsonNode data,
     Instant fetchedAt,
     Instant attemptedAt,
-    boolean failed
-  ) {}
+    boolean failed,
+    Instant retryAt
+  ) {
+    private Cached(
+      JsonNode data,
+      Instant fetchedAt,
+      Instant attemptedAt,
+      boolean failed
+    ) {
+      this(data, fetchedAt, attemptedAt, failed, null);
+    }
+  }
 
   public LiveDataService(ObjectMapper mapper, IndiaRegions regions) {
     this.mapper = mapper;
@@ -46,6 +60,17 @@ public class LiveDataService {
   private Cached fetchLocked(String key, String url, int ttlSeconds) {
     Instant now = Instant.now();
     Cached old = cache.get(key);
+    String host = URI.create(url).getHost();
+    Instant retryAt = providerCooldowns.get(host);
+    if (retryAt != null && now.isBefore(retryAt)) {
+      return new Cached(
+        old == null ? null : old.data(),
+        old == null ? null : old.fetchedAt(),
+        old == null ? null : old.attemptedAt(),
+        true,
+        retryAt
+      );
+    }
     if (
       old != null &&
       Duration.between(old.attemptedAt(), now).getSeconds() <
@@ -58,6 +83,40 @@ public class LiveDataService {
         .GET()
         .build();
       var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+      if (response.statusCode() == 429) {
+        Instant resume = now.plusSeconds(900);
+        String retry =
+          response.headers() == null
+            ? ""
+            : response.headers().firstValue("Retry-After").orElse("");
+        try {
+          Instant specified;
+          try {
+            specified = now.plusSeconds(Long.parseLong(retry));
+          } catch (NumberFormatException e) {
+            specified = ZonedDateTime.parse(
+              retry,
+              java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
+            ).toInstant();
+          }
+          if (specified.isAfter(resume)) resume = specified;
+        } catch (RuntimeException ignored) {}
+        providerCooldowns.put(host, resume);
+        Cached limited = new Cached(
+          old == null ? null : old.data(),
+          old == null ? null : old.fetchedAt(),
+          now,
+          true,
+          resume
+        );
+        cache.put(key, limited);
+        LOG.warn(
+          "Live provider {} rate-limited requests; retry after {}",
+          host,
+          resume
+        );
+        return limited;
+      }
       if (response.statusCode() != 200) throw new java.io.IOException(
         "Upstream HTTP " + response.statusCode()
       );
@@ -83,7 +142,12 @@ public class LiveDataService {
       cache.put(key, value);
       return value;
     } catch (Exception ex) {
-      LOG.warn("Live provider {} failed: {}: {}", URI.create(url).getHost(), ex.getClass().getSimpleName(), ex.getMessage());
+      LOG.warn(
+        "Live provider {} failed: {}: {}",
+        URI.create(url).getHost(),
+        ex.getClass().getSimpleName(),
+        ex.getMessage()
+      );
       if (
         ex instanceof InterruptedException
       ) Thread.currentThread().interrupt();
@@ -113,11 +177,16 @@ public class LiveDataService {
     out.put("sourceUrl", sourceUrl);
     out.put("fetchedAt", c.fetchedAt());
     out.put("lastAttemptAt", c.attemptedAt());
+    out.put("retryAt", c.retryAt());
     out.put(
       "message",
-      c.failed()
-        ? "Provider is unreachable. Any displayed values are last-known data; check their timestamp."
-        : "Fetched from the external provider; publication can lag the event."
+      c.retryAt() != null && Instant.now().isBefore(c.retryAt())
+        ? "Provider rate limit reached. Requests are paused until " +
+            c.retryAt() +
+            ". Any displayed values are last-known data."
+        : c.failed()
+          ? "Provider is unreachable. Any displayed values are last-known data; check their timestamp."
+          : "Fetched from the external provider; publication can lag the event."
     );
     return out;
   }

@@ -116,3 +116,5 @@ installed Chrome. Test artifacts are under frontend/test-results (Git-ignored).
 - npm production dependency audit: zero known vulnerabilities.
 - Render resources have not yet been created. Local combined-JAR testing does not verify the Linux container build or hosted TLS. Physical phone installation must be checked after Render supplies the actual HTTPS URL.
 - Browser recheck against the combined JAR: all 11 Edge tests passed, including all role routes, phone viewport layouts and actual offline service-worker behavior. Frontend formatting also passed.
+
+Hosted verification: HTTPS shell, manifest, worker, database health, four role logins and 36-region directory passed. Air-quality and earthquake feeds were available. Open-Meteo weather returned HTTP 429 on Render. Added provider-wide 15-minute minimum cooldown with Retry-After support and explicit rate-limit messaging; 8 feed tests passed. This does not remove the upstream quota; weather restoration remains unverified. No paid API subscription was enabled.

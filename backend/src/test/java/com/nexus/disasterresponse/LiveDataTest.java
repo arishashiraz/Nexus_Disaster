@@ -15,6 +15,26 @@ import org.springframework.test.util.ReflectionTestUtils;
 class LiveDataTest {
 
   @Test
+  void rateLimitPausesOtherLocationsWithoutInventingData() throws Exception {
+    var service = service("{}", 429);
+    var first = service.weather("DL", null, null);
+    var second = service.weather("TN", null, null);
+    assertEquals("UNAVAILABLE", second.get("status"));
+    assertNull(second.get("data"));
+    assertNotNull(first.get("retryAt"));
+    assertEquals(first.get("retryAt"), second.get("retryAt"));
+    assertTrue(second.get("message").toString().contains("rate limit"));
+    HttpClient client = (HttpClient) ReflectionTestUtils.getField(
+      service,
+      "client"
+    );
+    verify(client, times(1)).send(
+      any(HttpRequest.class),
+      org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()
+    );
+  }
+
+  @Test
   @SuppressWarnings("unchecked")
   void failedRefreshKeepsDatedDataAndMarksItStale() throws Exception {
     var service = service(
@@ -28,7 +48,14 @@ class LiveDataTest {
     >) ReflectionTestUtils.getField(service, "cache");
     var entry = cache.entrySet().iterator().next();
     Object previous = entry.getValue();
-    var constructor = previous.getClass().getDeclaredConstructors()[0];
+    var constructor = previous
+      .getClass()
+      .getDeclaredConstructor(
+        com.fasterxml.jackson.databind.JsonNode.class,
+        java.time.Instant.class,
+        java.time.Instant.class,
+        boolean.class
+      );
     constructor.setAccessible(true);
     cache.put(
       entry.getKey(),
@@ -69,7 +96,14 @@ class LiveDataTest {
     >) ReflectionTestUtils.getField(service, "cache");
     var entry = cache.entrySet().iterator().next();
     Object previous = entry.getValue();
-    var constructor = previous.getClass().getDeclaredConstructors()[0];
+    var constructor = previous
+      .getClass()
+      .getDeclaredConstructor(
+        com.fasterxml.jackson.databind.JsonNode.class,
+        java.time.Instant.class,
+        java.time.Instant.class,
+        boolean.class
+      );
     constructor.setAccessible(true);
     cache.put(
       entry.getKey(),
