@@ -118,3 +118,16 @@ installed Chrome. Test artifacts are under frontend/test-results (Git-ignored).
 - Browser recheck against the combined JAR: all 11 Edge tests passed, including all role routes, phone viewport layouts and actual offline service-worker behavior. Frontend formatting also passed.
 
 Hosted verification: HTTPS shell, manifest, worker, database health, four role logins and 36-region directory passed. Air-quality and earthquake feeds were available. Open-Meteo weather returned HTTP 429 on Render. Added provider-wide 15-minute minimum cooldown with Retry-After support and explicit rate-limit messaging; 8 feed tests passed. This does not remove the upstream quota; weather restoration remains unverified. No paid API subscription was enabled.
+
+
+## Weather provider replacement ? 19 October 2026
+
+Open-Meteo weather requests from Render returned HTTP 429. Weather now uses MET Norway Locationforecast with identifying User-Agent, backend caching, conditional requests, gzip decoding, Expires handling and provider-wide rate-limit backoff. No API key or paid service is required. Open-Meteo/CAMS air quality and USGS earthquakes remain separate.
+
+The app displays near-current forecast estimates and upcoming point forecasts, not station observations or daily totals. It identifies forecast valid time, model update time and fetch time; wind units are converted to km/h and rainfall periods are explicit. Missing rainfall stays unknown. Models older than 24 hours and payloads without a nearby forecast are rejected for fresh results; dated cached values are labelled stale.
+
+Validation: full backend suite passed 23 tests; final weather/cache regression rerun passed 12 tests. Production frontend build, combined JAR packaging, and PWA manifest/worker checks passed. All 36 weather locations returned AVAILABLE with source MET Norway; all 36 air-quality locations and the earthquake feed also returned AVAILABLE. Tests used the isolated nexus_audit database. Local success is not a hosted availability guarantee: Render must deploy this commit and its public weather endpoint must be checked before the fix is considered verified there.
+
+Provider documentation: https://api.met.no/weatherapi/locationforecast/2.0/documentation
+Terms and attribution: https://api.met.no/doc/TermsOfService
+Final combined-package browser run: all 11 Edge regression tests passed, including mobile layouts, all role pages, feed isolation and offline service-worker behavior.

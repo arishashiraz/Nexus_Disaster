@@ -11,7 +11,7 @@ An installable, India-wide Progressive Web App for a semester / Professional Tra
 
 - **Installable app:** standalone app window, app icons, offline public shell, connection feedback, and update prompts. Open `/app` to enter the workspace directly.
 - **All India:** all 28 states and 8 union territories; state/district incident reporting and state/source filters. Maps start at India and recenter correctly when a state or pin changes.
-- **Live India:** Open-Meteo/CAMS air-quality estimates (PM2.5, PM10, US AQI) and actual Open-Meteo weather for a named sample point in every state/UT, custom coordinates, three-day forecasts, and a separate USGS regional earthquake feed. Every feed shows its source, data time, fetch time, and availability.
+- **Live India:** Open-Meteo/CAMS air-quality estimates (PM2.5, PM10, US AQI) and MET Norway weather forecasts for a named sample point in every state/UT, custom coordinates, and upcoming forecast intervals, and a separate USGS regional earthquake feed. Every feed shows its source, data time, fetch time, and availability.
 - **Honest data separation:** seeded fictional reports and QA records have source labels. Live provider data never automatically verifies incidents or dispatches teams.
 - **Reliability fixes:** independent sidebar scrolling, modal keyboard support, duplicate-submit protection, preserved sessions during connection failure, stock-edit conflict detection, consistent responder lock ordering, and database-backed health checks.
 
@@ -251,7 +251,7 @@ All protected requests use `Authorization: Bearer <token>`. Inputs are validated
 |---|---|
 | `GET /api/health` | Public health response with a real database query |
 | `GET /api/regions` | Authenticated directory of all 36 states/UTs |
-| `GET /api/live/weather?stateCode=DL` | Authenticated current weather; optional `latitude` and `longitude` |
+| `GET /api/live/weather?stateCode=DL` | Authenticated near-current forecast estimates; optional `latitude` and `longitude` |
 | `GET /api/live/earthquakes` | Authenticated regional USGS feed |
 | `POST /api/auth/register` | Public citizen/volunteer registration |
 | `POST /api/auth/login` | Public login, returns token + safe user JSON |
@@ -381,7 +381,7 @@ Only example development credentials belong in source. Do not upload `.env`, `.r
 
 ## Live sources and freshness
 
-- [Open-Meteo documentation](https://open-meteo.com/en/docs): current model-based weather at the selected coordinates, not an official warning or statewide measurement. NEXUS caches each point for ten minutes. Attribution is displayed in the app. This academic use follows the [free non-commercial API terms](https://open-meteo.com/en/terms).
+- [MET Norway Locationforecast](https://api.met.no/weatherapi/locationforecast/2.0/documentation): global point forecasts, not station observations or official warnings. NEXUS identifies itself, caches for at least ten minutes and respects Expires, Last-Modified and Retry-After headers. Wind is converted from m/s to km/h; rainfall is labelled with its forecast interval. MET Norway attribution and the CC BY 4.0 licence appear in the app. No API key is required. Open-Meteo/CAMS remains the separate air-quality source.
 - [USGS GeoJSON summary feed](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php): past-seven-day earthquake events, refreshed by NEXUS every five minutes, filtered to 6?38?N and 68?98?E. This rectangular area includes neighbouring countries and offshore events. It is not an administrative-border filter or an exhaustive earthquake catalogue.
 - [National Portal state/UT directory](https://www.india.gov.in/directory/web-directory/state-uts): region names are represented in `shared/india-regions.json`. Sample coordinates are named city points, not entire-state observations or official boundaries.
 

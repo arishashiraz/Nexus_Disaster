@@ -75,7 +75,7 @@ export default function LiveIndia() {
   const busy = weatherBusy || airBusy || quakeBusy;
   const pollution = air?.data?.current;
   const current = weather?.data?.current,
-    daily = weather?.data?.daily;
+    forecast = weather?.data?.forecast;
   return (
     <div className="live-india">
       <div className="page-heading">
@@ -196,14 +196,14 @@ export default function LiveIndia() {
                 <strong>
                   {current.temperature_2m ?? '—'}°<span>C</span>
                 </strong>
-                <p>{weatherText(current.weather_code)}</p>
+                <p>{current.description || weatherText(current.weather_code)}</p>
               </div>
               <div>
                 <Droplets />
                 <strong>
                   {current.precipitation ?? '—'} <small>mm</small>
                 </strong>
-                <p>Precipitation in current interval</p>
+                <p>Forecast precipitation ? next {current.precipitationHours || '?'} hours</p>
               </div>
               <div>
                 <Wind />
@@ -222,20 +222,14 @@ export default function LiveIndia() {
               </div>
             </div>
             <div className="forecast-strip">
-              {daily?.time?.map((t, i) => (
-                <article key={t}>
-                  <small>
-                    {new Date(t * 1000).toLocaleDateString('en-IN', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </small>
-                  <strong>
-                    {daily.temperature_2m_min?.[i] ?? 'Unknown'}° /{' '}
-                    {daily.temperature_2m_max?.[i] ?? 'Unknown'}°
-                  </strong>
-                  <span>{daily.precipitation_sum?.[i] ?? 'Unknown'} mm forecast precipitation</span>
+              {forecast?.map((item) => (
+                <article key={item.time}>
+                  <small>{sourceTime(item.time)}</small>
+                  <strong>{item.temperature_2m ?? '?'}?C</strong>
+                  <span>{item.description || 'Forecast'}</span>
+                  <span>
+                    {item.precipitation ?? '?'} mm over next {item.precipitationHours ?? '?'} hours
+                  </span>
                 </article>
               ))}
             </div>
@@ -245,7 +239,7 @@ export default function LiveIndia() {
         )}
         <div className="source-foot">
           <p>
-            <strong>Data time:</strong> {sourceTime(current?.time)} · <strong>Fetched:</strong>{' '}
+            <strong>Forecast valid:</strong> {sourceTime(current?.time)} · <strong>Fetched:</strong>{' '}
             {weather?.fetchedAt ? date(weather.fetchedAt) : 'Not yet fetched'}
           </p>
           {weather?.status !== 'AVAILABLE' && weather?.message && (
@@ -259,8 +253,17 @@ export default function LiveIndia() {
             {weather?.coverage || 'Point-specific weather model data.'} Refresh interval: 10
             minutes.
           </p>
-          <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">
-            Weather data by Open-Meteo (CC BY 4.0) <ExternalLink size={12} />
+          <p>
+            Model updated:{' '}
+            {weather?.data?.modelUpdatedAt ? date(weather.data.modelUpdatedAt) : 'Not available'}.
+            Wind converted to km/h; forecast intervals selected by NEXUS.
+          </p>
+          <a href="https://api.met.no/" target="_blank" rel="noreferrer">
+            Weather forecasts by MET Norway <ExternalLink size={12} />
+          </a>{' '}
+          ?{' '}
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
+            CC BY 4.0
           </a>
         </div>
       </section>

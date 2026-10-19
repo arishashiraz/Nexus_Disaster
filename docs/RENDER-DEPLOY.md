@@ -45,3 +45,5 @@ Sources:
 - https://render.com/docs/deploy-to-render
 - https://render.com/docs/blueprint-spec
 - https://render.com/docs/free
+
+Weather now uses MET Norway Locationforecast, without an API key. Redeploy the latest commit to replace the old Open-Meteo weather integration. Air quality remains Open-Meteo/CAMS; earthquakes remain USGS. Local tests cannot establish availability from Render; verify all three feeds after deployment.

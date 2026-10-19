@@ -19,11 +19,15 @@ public class LiveDataService {
   private final ObjectMapper mapper;
   private final IndiaRegions regions;
   private final HttpClient client = HttpClient.newBuilder()
+    .followRedirects(HttpClient.Redirect.NORMAL)
     .connectTimeout(Duration.ofSeconds(5))
     .build();
   private final Object[] locks = java.util.stream.IntStream.range(0, 32)
     .mapToObj(i -> new Object())
     .toArray();
+  private final Map<String, JsonNode> weatherRaw = new ConcurrentHashMap<>();
+  private final Map<String, Instant> expires = new ConcurrentHashMap<>();
+  private final Map<String, String> modified = new ConcurrentHashMap<>();
   private final Map<String, Cached> cache = new ConcurrentHashMap<>();
   private final Map<String, Instant> providerCooldowns =
     new ConcurrentHashMap<>();
@@ -76,13 +80,34 @@ public class LiveDataService {
       Duration.between(old.attemptedAt(), now).getSeconds() <
         (old.failed() ? 60 : ttlSeconds)
     ) return old;
+    if (
+      old != null &&
+      !old.failed() &&
+      now.isBefore(expires.getOrDefault(key, Instant.MIN))
+    ) return old;
     try {
-      var request = HttpRequest.newBuilder(URI.create(url))
+      var builder = HttpRequest.newBuilder(URI.create(url))
         .timeout(Duration.ofSeconds(10))
-        .header("User-Agent", "NEXUS-Academic-Project/1.0")
-        .GET()
-        .build();
-      var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        .header(
+          "User-Agent",
+          "NEXUS-India/1.0 https://github.com/arishashiraz/Nexus_Disaster"
+        )
+        .header("Accept-Encoding", "gzip")
+        .GET();
+      if (modified.containsKey(key)) builder.header(
+        "If-Modified-Since",
+        modified.get(key)
+      );
+      var response = client.send(
+        builder.build(),
+        HttpResponse.BodyHandlers.ofByteArray()
+      );
+      if (response.statusCode() == 304 && old != null && old.data() != null) {
+        applyCacheHeaders(key, response.headers(), now);
+        Cached validated = new Cached(old.data(), old.fetchedAt(), now, false);
+        cache.put(key, validated);
+        return validated;
+      }
       if (response.statusCode() == 429) {
         Instant resume = now.plusSeconds(900);
         String retry =
@@ -120,7 +145,30 @@ public class LiveDataService {
       if (response.statusCode() != 200) throw new java.io.IOException(
         "Upstream HTTP " + response.statusCode()
       );
-      JsonNode body = mapper.readTree(response.body());
+      byte[] bytes = response.body();
+      if (
+        response.headers() != null &&
+        response
+          .headers()
+          .firstValue("Content-Encoding")
+          .orElse("")
+          .equalsIgnoreCase("gzip")
+      ) {
+        try (
+          var input = new java.util.zip.GZIPInputStream(
+            new java.io.ByteArrayInputStream(bytes)
+          )
+        ) {
+          bytes = input.readAllBytes();
+        }
+      }
+      JsonNode body = mapper.readTree(bytes);
+      if (key.startsWith("weather-")) {
+        JsonNode normalized = MetWeather.normalize(mapper, body, now);
+        weatherRaw.put(key, body);
+        body = normalized;
+      }
+      applyCacheHeaders(key, response.headers(), now);
       if (
         key.startsWith("weather-") &&
         (!body.path("current").path("time").isIntegralNumber() ||
@@ -163,6 +211,33 @@ public class LiveDataService {
     }
   }
 
+  private void applyCacheHeaders(String key, HttpHeaders headers, Instant now) {
+    if (headers == null) return;
+    headers.firstValue("Last-Modified").ifPresent(v -> modified.put(key, v));
+    headers.firstValue("Expires").ifPresent(v -> {
+      try {
+        expires.put(
+          key,
+          ZonedDateTime.parse(
+            v,
+            java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME
+          ).toInstant()
+        );
+      } catch (RuntimeException ignored) {
+        expires.put(key, now.plusSeconds(600));
+      }
+    });
+    if (weatherRaw.size() > 500) weatherRaw
+      .keySet()
+      .removeIf(k -> !cache.containsKey(k));
+    if (expires.size() > 500) expires
+      .keySet()
+      .removeIf(k -> !cache.containsKey(k));
+    if (modified.size() > 500) modified
+      .keySet()
+      .removeIf(k -> !cache.containsKey(k));
+  }
+
   private Map<String, Object> envelope(
     Cached c,
     String source,
@@ -203,12 +278,12 @@ public class LiveDataService {
     String coords = point.key();
     String url = String.format(
       Locale.ROOT,
-      "https://api.open-meteo.com/v1/forecast?latitude=%.2f&longitude=%.2f&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=3&timezone=Asia%%2FKolkata&timeformat=unixtime",
+      "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.2f&lon=%.2f",
       lat,
       lon
     );
     Cached c = fetch("weather-" + coords, url, 600);
-    var out = envelope(c, "Open-Meteo", "https://open-meteo.com/");
+    var out = envelope(c, "MET Norway", "https://api.met.no/");
     out.put("state", region);
     out.put("latitude", lat);
     out.put("longitude", lon);
@@ -224,10 +299,23 @@ public class LiveDataService {
     );
     out.put(
       "attribution",
-      "Weather data by Open-Meteo, CC BY 4.0. Free API for this non-commercial academic project."
+      "Weather forecasts by MET Norway, CC BY 4.0. NEXUS converts wind units and selects forecast intervals."
     );
     out.put("refreshSeconds", 600);
-    out.put("data", c.data());
+    JsonNode data = c.data();
+    JsonNode raw = weatherRaw.get("weather-" + coords);
+    if (raw != null && data != null) {
+      try {
+        data = MetWeather.normalize(mapper, raw, Instant.now());
+      } catch (RuntimeException expired) {
+        out.put("status", "STALE");
+        out.put(
+          "message",
+          "The cached forecast is out of date. Check its valid time; fresh provider data is not available yet."
+        );
+      }
+    }
+    out.put("data", data);
     return out;
   }
 

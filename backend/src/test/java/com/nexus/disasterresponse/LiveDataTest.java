@@ -14,6 +14,89 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 class LiveDataTest {
 
+  private String metPayload() {
+    String time = java.time.Instant.now().toString();
+    return (
+      "{\"properties\":{\"meta\":{\"updated_at\":\"" +
+      time +
+      "\"},\"timeseries\":[{\"time\":\"" +
+      time +
+      "\",\"data\":{\"instant\":{\"details\":{\"air_temperature\":25,\"wind_speed\":5,\"relative_humidity\":60}},\"next_6_hours\":{\"summary\":{\"symbol_code\":\"rain\"},\"details\":{\"precipitation_amount\":2}}}}]}}"
+    );
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void compressedWeatherHonorsProviderExpiry() throws Exception {
+    var service = service(metPayload(), 200);
+    HttpClient client = (HttpClient) ReflectionTestUtils.getField(
+      service,
+      "client"
+    );
+    HttpResponse<byte[]> response = mock(HttpResponse.class);
+    var buffer = new java.io.ByteArrayOutputStream();
+    try (var gzip = new java.util.zip.GZIPOutputStream(buffer)) {
+      gzip.write(
+        metPayload().getBytes(java.nio.charset.StandardCharsets.UTF_8)
+      );
+    }
+    when(response.statusCode()).thenReturn(200);
+    when(response.body()).thenReturn(buffer.toByteArray());
+    when(response.headers()).thenReturn(
+      HttpHeaders.of(
+        Map.of(
+          "Content-Encoding",
+          List.of("gzip"),
+          "Expires",
+          List.of(
+            java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC)
+              .plusHours(2)
+              .format(java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME)
+          )
+        ),
+        (a, b) -> true
+      )
+    );
+    when(
+      client.send(
+        any(HttpRequest.class),
+        org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<byte[]>>any()
+      )
+    ).thenReturn(response);
+    assertEquals("AVAILABLE", service.weather("DL", null, null).get("status"));
+    Map<String, Object> cache = (Map<
+      String,
+      Object
+    >) ReflectionTestUtils.getField(service, "cache");
+    var entry = cache.entrySet().iterator().next();
+    var previous = entry.getValue();
+    var constructor = previous
+      .getClass()
+      .getDeclaredConstructor(
+        com.fasterxml.jackson.databind.JsonNode.class,
+        java.time.Instant.class,
+        java.time.Instant.class,
+        boolean.class
+      );
+    constructor.setAccessible(true);
+    var getData = previous.getClass().getDeclaredMethod("data");
+    getData.setAccessible(true);
+    cache.put(
+      entry.getKey(),
+      constructor.newInstance(
+        getData.invoke(previous),
+        java.time.Instant.now(),
+        java.time.Instant.now().minusSeconds(3600),
+        false
+      )
+    );
+    assertEquals("AVAILABLE", service.weather("DL", null, null).get("status"));
+    verify(client, times(1)).send(
+      any(HttpRequest.class),
+      org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<byte[]>>any()
+    );
+  }
+
   @Test
   void rateLimitPausesOtherLocationsWithoutInventingData() throws Exception {
     var service = service("{}", 429);
@@ -30,17 +113,14 @@ class LiveDataTest {
     );
     verify(client, times(1)).send(
       any(HttpRequest.class),
-      org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()
+      org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<byte[]>>any()
     );
   }
 
   @Test
   @SuppressWarnings("unchecked")
   void failedRefreshKeepsDatedDataAndMarksItStale() throws Exception {
-    var service = service(
-      "{\"current\":{\"time\":1792252800,\"temperature_2m\":25}}",
-      200
-    );
+    var service = service(metPayload(), 200);
     var first = service.weather("DL", null, null);
     Map<String, Object> cache = (Map<
       String,
@@ -73,7 +153,7 @@ class LiveDataTest {
     when(
       client.send(
         any(HttpRequest.class),
-        org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()
+        org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<byte[]>>any()
       )
     ).thenThrow(new IOException("Provider unavailable"));
     var result = service.weather("DL", null, null);
@@ -121,7 +201,7 @@ class LiveDataTest {
     when(
       client.send(
         any(HttpRequest.class),
-        org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()
+        org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<byte[]>>any()
       )
     ).thenThrow(new IOException("Provider unavailable"));
     var result = service.airQuality("DL", null, null);
@@ -135,13 +215,15 @@ class LiveDataTest {
     ObjectMapper mapper = new ObjectMapper();
     var service = new LiveDataService(mapper, new IndiaRegions(mapper));
     HttpClient client = mock(HttpClient.class);
-    HttpResponse<String> response = mock(HttpResponse.class);
+    HttpResponse<byte[]> response = mock(HttpResponse.class);
     when(response.statusCode()).thenReturn(code);
-    when(response.body()).thenReturn(payload);
+    when(response.body()).thenReturn(
+      payload.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+    );
     when(
       client.send(
         any(HttpRequest.class),
-        org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()
+        org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<byte[]>>any()
       )
     ).thenReturn(response);
     ReflectionTestUtils.setField(service, "client", client);
@@ -158,21 +240,18 @@ class LiveDataTest {
 
   @Test
   void validWeatherIsCachedAndAttributed() throws Exception {
-    var service = service(
-      "{\"current\":{\"time\":1792252800,\"temperature_2m\":25}}",
-      200
-    );
+    var service = service(metPayload(), 200);
     var first = service.weather("TN", null, null);
     var second = service.weather("TN", null, null);
     assertEquals("AVAILABLE", first.get("status"));
-    assertEquals("Open-Meteo", first.get("source"));
+    assertEquals("MET Norway", first.get("source"));
     assertEquals(first.get("fetchedAt"), second.get("fetchedAt"));
     verify(
       (HttpClient) ReflectionTestUtils.getField(service, "client"),
       times(1)
     ).send(
       any(HttpRequest.class),
-      org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()
+      org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<byte[]>>any()
     );
   }
 
@@ -208,7 +287,7 @@ class LiveDataTest {
       times(1)
     ).send(
       any(HttpRequest.class),
-      org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()
+      org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<byte[]>>any()
     );
   }
 
