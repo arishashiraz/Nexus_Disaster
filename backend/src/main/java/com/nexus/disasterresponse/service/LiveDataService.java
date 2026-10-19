@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class LiveDataService {
 
+  private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(LiveDataService.class);
   private final ObjectMapper mapper;
   private final IndiaRegions regions;
   private final HttpClient client = HttpClient.newBuilder()
@@ -82,6 +83,7 @@ public class LiveDataService {
       cache.put(key, value);
       return value;
     } catch (Exception ex) {
+      LOG.warn("Live provider {} failed: {}: {}", URI.create(url).getHost(), ex.getClass().getSimpleName(), ex.getMessage());
       if (
         ex instanceof InterruptedException
       ) Thread.currentThread().interrupt();
