@@ -11,7 +11,12 @@ import AppStatus from './components/AppStatus';
 import './pwa';
 function Guard({ role }) {
   const { user, loading, sessionError, retrySession } = useAuth();
-  if (loading) return <div className="loading">Loading NEXUS…</div>;
+  if (loading)
+    return (
+      <div className="loading">
+        Connecting to NEXUS. The demo server may take up to two minutes to wake.
+      </div>
+    );
   if (sessionError)
     return (
       <div className="error-page">

@@ -112,6 +112,7 @@ export function Form({
   onSubmit,
   children,
   label = 'Save changes',
+  busyLabel = 'Saving...',
   className = '',
   resetOnSuccess = false,
 }) {
@@ -150,7 +151,7 @@ export function Form({
         </div>
       )}
       <button className="button primary" disabled={busy}>
-        {busy ? 'Saving…' : label}
+        {busy ? busyLabel : label}
         <ArrowUpRight size={16} />
       </button>
     </form>

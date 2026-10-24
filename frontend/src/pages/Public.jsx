@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowUpRight,
@@ -184,6 +184,16 @@ export function AuthPage({ register = false }) {
   const { login } = useAuth(),
     navigate = useNavigate();
   const [error, setError] = useState('');
+  const [connecting, setConnecting] = useState(false);
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!connecting) {
+      setSlow(false);
+      return;
+    }
+    const timer = setTimeout(() => setSlow(true), 8000);
+    return () => clearTimeout(timer);
+  }, [connecting]);
   const [email, setEmail] = useState(''),
     [password, setPassword] = useState('');
   return (
@@ -219,15 +229,26 @@ export function AuthPage({ register = false }) {
               {error}
             </div>
           )}
+          {connecting && (
+            <p role="status" aria-live="polite">
+              {slow
+                ? 'Still connecting. The free demo server may be waking up. This can take up to two minutes; please keep this screen open.'
+                : 'Connecting securely to NEXUS...'}
+            </p>
+          )}
           <Form
+            busyLabel={register ? 'Creating account...' : 'Signing in...'}
             label={register ? 'Create account' : 'Sign in'}
             onSubmit={async (v) => {
               setError('');
+              setConnecting(true);
               try {
                 const u = await login(v, register);
                 navigate(`/${u.role.toLowerCase()}/dashboard`);
               } catch (e) {
                 setError(errorMessage(e));
+              } finally {
+                setConnecting(false);
               }
             }}
           >

@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
       return;
     }
     try {
-      setUser((await api.get('/auth/me')).data);
+      setUser((await api.get('/auth/me', { timeout: 120000 })).data);
     } catch (e) {
       if (e.response?.status === 401) {
         sessionStorage.removeItem('nexus.token');
@@ -36,7 +36,14 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('nexus:logout', expired);
   }, [retrySession]);
   const login = async (values, register = false) => {
-    const { data } = await api.post(register ? '/auth/register' : '/auth/login', values);
+    const { data } = await api.post(register ? '/auth/register' : '/auth/login', values, {
+      timeout: 120000,
+    });
+    if (typeof data?.token !== 'string' || !data?.user?.role) {
+      throw new Error(
+        'NEXUS has not finished starting. Please wait a moment and try signing in again.',
+      );
+    }
     sessionStorage.setItem('nexus.token', data.token);
     setSessionError('');
     setUser(data.user);
